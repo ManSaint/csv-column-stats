@@ -11,8 +11,9 @@
     "lint:fix": "biome check --write .",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run --passWithNoTests",
-    "test:e2e": "playwright test",
-    "test:a11y": "playwright test a11y"
+    "test:e2e": "playwright test --project=chromium",
+    "test:a11y": "playwright test a11y",
+    "screenshot": "playwright test --project=screenshot"
   },
   "dependencies": {
     "next": "16.3.4",
