@@ -55,6 +55,7 @@ function computeColumn(
   for (const value of present) freq.set(value, (freq.get(value) ?? 0) + 1);
   let mostFrequent: string | null = null;
   let best = 0;
+  // First-encountered wins ties: Map preserves insertion order and we only replace on strict >.
   for (const [value, n] of freq) {
     if (n > best) {
       best = n;

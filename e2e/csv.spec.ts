@@ -22,3 +22,19 @@ test("shows the empty state before any input", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText(/No data yet/)).toBeVisible();
 });
+
+test("shows a warning but still renders stats when a row is ragged", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Paste CSV text").fill("a,b\n1,2\n3,4,5");
+
+  // The error banner appears as a non-blocking warning. (Scoped by text
+  // because Next.js also renders its own `role="alert"` route announcer.)
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Some rows had problems" }),
+  ).toBeVisible();
+  // ...and the stats table is still rendered for the columns we could read.
+  await expect(page.getByRole("table")).toBeVisible();
+  await expect(page.getByText(/2 columns · 2 rows/)).toBeVisible();
+});

@@ -36,27 +36,32 @@ export default function Home() {
           role="alert"
           className="flex gap-3 items-start bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 rounded-[10px] px-4 py-3.5 text-red-700 dark:text-red-300 text-sm"
         >
-          <span className="font-semibold">Could not parse that CSV.</span>
+          <span className="font-semibold">
+            {hasData
+              ? "Some rows had problems — showing the columns we could read."
+              : "Could not parse that CSV."}
+          </span>
           <span>{parsed.error}</span>
         </div>
       )}
 
-      {!parsed.error &&
-        (hasData ? (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-[13px] font-semibold uppercase tracking-[0.04em] text-slate-600 dark:text-slate-400">
-              Results · {stats.length} columns · {parsed.rows.length} rows
-            </h2>
-            <StatsTable stats={stats} />
-          </section>
-        ) : (
-          <div
-            aria-live="polite"
-            className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-8 text-center text-slate-500"
-          >
-            No data yet. Paste CSV text or drop a .csv file above.
-          </div>
-        ))}
+      {hasData && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-[13px] font-semibold uppercase tracking-[0.04em] text-slate-600 dark:text-slate-400">
+            Results · {stats.length} columns · {parsed.rows.length} rows
+          </h2>
+          <StatsTable stats={stats} />
+        </section>
+      )}
+
+      {!hasData && !parsed.error && (
+        <div
+          aria-live="polite"
+          className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-8 text-center text-slate-500"
+        >
+          No data yet. Paste CSV text or drop a .csv file above.
+        </div>
+      )}
 
       <footer className="text-xs text-slate-500">
         Runs entirely in your browser. Nothing is uploaded.
