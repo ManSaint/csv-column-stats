@@ -4,6 +4,7 @@ function isMissing(value: string | undefined | null): boolean {
   return value === undefined || value === null || value.trim() === "";
 }
 
+// Numeric detection uses JS Number() semantics: "1e3" and "0x1" parse as numbers.
 function toNumber(value: string): number | null {
   const trimmed = value.trim();
   if (trimmed === "") return null;

@@ -74,4 +74,9 @@ describe("computeStats", () => {
     const result = cols(["b", "a"], [{ b: "1", a: "x" }]);
     expect(result.map((c) => c.name)).toEqual(["b", "a"]);
   });
+
+  it("breaks mostFrequent ties by first-encountered value", () => {
+    const [c] = cols(["s"], [{ s: "b" }, { s: "a" }, { s: "b" }, { s: "a" }]);
+    expect(c.mostFrequent).toBe("b");
+  });
 });

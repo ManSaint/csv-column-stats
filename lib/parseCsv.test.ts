@@ -38,4 +38,11 @@ describe("parseCsv", () => {
     expect(r.rows).toEqual([]);
     expect(r.error).toBeNull();
   });
+
+  it("reports an error for a ragged row but still returns clean rows", () => {
+    const r = parseCsv("a,b\n1,2,3");
+    expect(r.error).not.toBeNull();
+    expect(r.rows[0]).toEqual({ a: "1", b: "2" });
+    expect(Object.keys(r.rows[0])).toEqual(["a", "b"]);
+  });
 });
