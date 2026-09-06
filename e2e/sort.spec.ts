@@ -1,4 +1,4 @@
-import { type Page, expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 // alpha, zeta, mid are numeric (means 2, 8, 5); bee and yak are text, each
 // with a clear most-frequent value (bee="zzz", yak="aaa") so a sort by
@@ -11,12 +11,14 @@ function columnOrder(page: Page) {
   return page.locator("tbody th").allTextContents();
 }
 
+test.beforeEach(async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Paste CSV text").fill(CSV);
+});
+
 test("clicking a header cycles ascending, descending, then back to CSV order", async ({
   page,
 }) => {
-  await page.goto("/");
-  await page.getByLabel("Paste CSV text").fill(CSV);
-
   expect(await columnOrder(page)).toEqual([
     "alpha",
     "zeta",
@@ -63,16 +65,12 @@ test("clicking a header cycles ascending, descending, then back to CSV order", a
 });
 
 test("only one column reports itself as sorted at a time", async ({ page }) => {
-  await page.goto("/");
-  await page.getByLabel("Paste CSV text").fill(CSV);
-
   await page.getByRole("button", { name: "Mean" }).click();
   await page.getByRole("button", { name: "Most frequent" }).click();
 
-  await expect(page.getByRole("columnheader", { name: "Mean" })).toHaveAttribute(
-    "aria-sort",
-    "none",
-  );
+  await expect(
+    page.getByRole("columnheader", { name: "Mean" }),
+  ).toHaveAttribute("aria-sort", "none");
   await expect(
     page.getByRole("columnheader", { name: "Most frequent" }),
   ).toHaveAttribute("aria-sort", "ascending");
@@ -91,9 +89,6 @@ test("only one column reports itself as sorted at a time", async ({ page }) => {
 });
 
 test("a header is sortable from the keyboard", async ({ page }) => {
-  await page.goto("/");
-  await page.getByLabel("Paste CSV text").fill(CSV);
-
   const columnHeaderButton = page.getByRole("button", { name: "Column" });
   await columnHeaderButton.focus();
   await expect(columnHeaderButton).toBeFocused();
