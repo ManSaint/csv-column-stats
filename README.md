@@ -12,7 +12,9 @@ Give it a CSV by pasting text, dropping a `.csv` file, or picking one with the f
 
 Each column is labelled **Numeric** or **Text** so you can see at a glance how it was interpreted. Nothing is sent to a server — parsing and stats run entirely in the page.
 
-![CSV Column Stats showing a parsed table with numeric and text columns](docs/screenshot.png)
+Click any column header (or Tab to it and press Enter or Space) to sort the table by that column. Activating the same header again reverses the order; a third activation restores the original CSV column order. Only one column is sorted at a time, missing values always sort to the bottom, and the active header shows an arrow (▲ ascending, ▼ descending) alongside `aria-sort` for assistive tech.
+
+![CSV Column Stats showing a parsed table sorted ascending by Mean, with numeric and text columns](docs/screenshot.png)
 
 ## Getting started
 
@@ -39,7 +41,8 @@ Open http://localhost:3000 and paste a CSV.
 
 - `lib/parseCsv.ts` — wraps [Papa Parse](https://www.papaparse.com/) (`header: true`, `skipEmptyLines: "greedy"`), returning clean `Record<string, string>` rows plus any parse error.
 - `lib/stats.ts` — pure functions that classify each column and compute its statistics. Fully unit-tested.
-- `components/` — `CsvInput` (paste / drop / pick), `StatsTable`, and `TypeBadge`, one per file.
+- `lib/sortStats.ts` — the pure three-state sort cycle (ascending → descending → original order) and comparator, including the null-sinks-to-bottom and tie-break-by-name rules. Fully unit-tested.
+- `components/` — `CsvInput` (paste / drop / pick), `StatsTable`, `SortableHeader` (the clickable, keyboard-operable column header), and `TypeBadge`, one per file.
 - `app/page.tsx` — wires input to stats and renders the empty, error, and results states.
 
 ## Testing
