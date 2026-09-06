@@ -14,7 +14,7 @@
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 const DEFAULT_CHECKS = ["lint", "typecheck", "test"];
 const TIMEOUT_MS = 10 * 60 * 1000;
@@ -46,13 +46,54 @@ const GIT_COMMIT =
 if (!GIT_COMMIT.test(command)) process.exit(0);
 
 if (/\s(--no-verify|-n)(\s|$)/.test(command)) {
+  deny("Commit blocked: --no-verify bypasses the project's checks. Run them and fix what fails.");
+}
+
+// --- Find the tree the commit is actually being made in. ---------------------------
+// CLAUDE_PROJECT_DIR is the main working directory. subagent-driven-development requires
+// a git worktree, so trusting it means checking a clean main while the real changes sit
+// in .worktrees/<branch> - the gate then passes vacuously on every commit. Resolve the
+// repository root from the command's own context instead.
+const cdTarget = command.match(/(?:^|[;&|]\s*)cd\s+(?:"([^"]+)"|'([^']+)'|(\S+))/);
+const candidates = [
+  cdTarget && (cdTarget[1] ?? cdTarget[2] ?? cdTarget[3]),
+  payload?.cwd,
+  process.env.CLAUDE_PROJECT_DIR,
+  process.cwd(),
+].filter(Boolean);
+
+// Walk up to the repository root - the nearest ancestor holding a `.git` (a directory in a
+// normal clone, a file in a worktree) - and accept it only if it also has a package.json.
+//
+// The `.git` boundary is load-bearing. Walking up for a bare package.json escapes the
+// project on a mis-resolved path: this machine has a stray C:\package.json, and an earlier
+// version of this function found it and ran that project's test script, which fired an
+// HTTP request at a LAN address. A gate must never execute scripts from a repo the commit
+// has nothing to do with.
+const findRepoRoot = (dir) => {
+  let d = resolve(dir);
+  for (let i = 0; i < 24; i++) {
+    if (existsSync(join(d, ".git"))) {
+      return existsSync(join(d, "package.json")) ? d : null;
+    }
+    const up = dirname(d);
+    if (up === d) return null;
+    d = up;
+  }
+  return null;
+};
+
+const root = candidates.map(findRepoRoot).find(Boolean);
+
+// Fail closed. A gate that cannot work out which tree to check must not conclude the tree
+// is fine - that is how it passed vacuously on every worktree commit before this.
+if (!root) {
   deny(
-    "Commit blocked: --no-verify bypasses the project's checks. Run them and fix what fails.",
+    "Commit blocked: the gate could not locate the project root for this commit, so it " +
+      `could not run any checks. Candidates tried: ${candidates.join(", ") || "(none)"}.`,
   );
 }
 
-// --- Run the project's own checks. ------------------------------------------------
-const root = process.env.CLAUDE_PROJECT_DIR || process.cwd();
 const pkgPath = join(root, "package.json");
 if (!existsSync(pkgPath)) process.exit(0); // not a JS project — nothing to gate
 
@@ -89,14 +130,8 @@ for (const script of CHECKS) {
     shell: process.platform === "win32",
   });
   if (res.status !== 0) {
-    const tail = `${res.stdout ?? ""}${res.stderr ?? ""}`
-      .trim()
-      .split("\n")
-      .slice(-25)
-      .join("\n");
-    failures.push(
-      `--- ${runner} run ${script} (exit ${res.status ?? "timed out"}) ---\n${tail}`,
-    );
+    const tail = `${res.stdout ?? ""}${res.stderr ?? ""}`.trim().split("\n").slice(-25).join("\n");
+    failures.push(`--- ${runner} run ${script} (exit ${res.status ?? "timed out"}) ---\n${tail}`);
   }
 }
 
