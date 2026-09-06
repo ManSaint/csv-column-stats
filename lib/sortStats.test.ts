@@ -48,6 +48,12 @@ describe("nextSortState", () => {
 });
 
 describe("sortStats", () => {
+  // Ties break by name, so a fixture whose `name` order happens to agree
+  // with the order a test asserts will pass even if the comparator under
+  // test is broken - the tie-break silently does the sorting instead. Any
+  // fixture testing a non-name key must give its rows `name`s whose
+  // alphabetical order CONTRADICTS the asserted order, so a regression in
+  // the real comparison can't hide behind the tie-break.
   const stats = [
     col({ name: "b", mean: 2 }),
     col({ name: "a", mean: 10 }),
@@ -123,9 +129,12 @@ describe("sortStats", () => {
     // "apple" vs "Banana": code-unit "<" orders "Banana" first (uppercase
     // sorts before lowercase in ASCII), but localeCompare orders "apple"
     // first. This distinguishes localeCompare from a naive comparison.
+    // Names are assigned in reverse ("Banana" -> "a", "apple" -> "b") so the
+    // name tie-break, if it fired, would give the opposite of the asserted
+    // order - it can't mask a broken comparator here.
     const text = [
-      col({ name: "z", mostFrequent: "Banana" }),
-      col({ name: "y", mostFrequent: "apple" }),
+      col({ name: "a", mostFrequent: "Banana" }),
+      col({ name: "b", mostFrequent: "apple" }),
     ];
     expect(
       sortStats(text, { key: "mostFrequent", direction: "ascending" }).map(
@@ -135,9 +144,11 @@ describe("sortStats", () => {
   });
 
   it("sorts by type, treating it as text", () => {
+    // Names ("a", "b") are assigned so their alphabetical order is the
+    // opposite of the asserted type order - see the note above `stats`.
     const types = [
-      col({ name: "z", type: "text" }),
-      col({ name: "y", type: "numeric" }),
+      col({ name: "a", type: "text" }),
+      col({ name: "b", type: "numeric" }),
     ];
     expect(
       sortStats(types, { key: "type", direction: "ascending" }).map(
