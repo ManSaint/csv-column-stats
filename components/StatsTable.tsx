@@ -3,12 +3,12 @@
 import { type ReactNode, useState } from "react";
 import {
   nextSortState,
-  type SortDirection,
   type SortKey,
   type SortState,
   sortStats,
 } from "@/lib/sortStats";
 import type { ColumnStats } from "@/lib/types";
+import { SortableHeader } from "./SortableHeader";
 import { TypeBadge } from "./TypeBadge";
 
 const NUMERIC_CELL = "px-4 py-3 font-mono tabular-nums whitespace-nowrap";
@@ -103,11 +103,6 @@ type AllSortKeysCovered = SortKey extends CoveredKey ? true : never;
 const _allSortKeysCovered: AllSortKeysCovered = true;
 void _allSortKeysCovered;
 
-function sortGlyph(direction: SortDirection | null): string {
-  if (direction === null) return "↕";
-  return direction === "ascending" ? "▲" : "▼";
-}
-
 export function StatsTable({ stats }: { stats: ColumnStats[] }) {
   const [sort, setSort] = useState<SortState | null>(null);
   const rows = sortStats(stats, sort);
@@ -122,32 +117,15 @@ export function StatsTable({ stats }: { stats: ColumnStats[] }) {
         <thead>
           <tr>
             {COLUMNS.map(({ key, label }) => {
-              const active = sort !== null && sort.key === key;
+              const direction =
+                sort !== null && sort.key === key ? sort.direction : null;
               return (
-                <th
+                <SortableHeader
                   key={key}
-                  scope="col"
-                  aria-sort={active ? sort.direction : "none"}
-                  className="text-left text-[13px] font-semibold text-slate-600 dark:text-slate-400 border-b border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 whitespace-nowrap p-0"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setSort((prev) => nextSortState(prev, key))}
-                    className="w-full flex items-center gap-1.5 px-4 py-3 text-left font-semibold cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-indigo-600 dark:focus-visible:outline-indigo-400"
-                  >
-                    {label}
-                    <span
-                      aria-hidden="true"
-                      className={`w-3 text-center ${
-                        active
-                          ? "text-slate-900 dark:text-slate-100"
-                          : "text-slate-400 dark:text-slate-500"
-                      }`}
-                    >
-                      {sortGlyph(active ? sort.direction : null)}
-                    </span>
-                  </button>
-                </th>
+                  label={label}
+                  direction={direction}
+                  onClick={() => setSort((prev) => nextSortState(prev, key))}
+                />
               );
             })}
           </tr>
