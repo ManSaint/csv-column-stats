@@ -11,6 +11,7 @@ import type { ColumnStats } from "@/lib/types";
 import { SortableHeader } from "./SortableHeader";
 import { TypeBadge } from "./TypeBadge";
 
+const NAME_CELL = "text-left font-semibold px-4 py-3 whitespace-nowrap";
 const NUMERIC_CELL = "px-4 py-3 font-mono tabular-nums whitespace-nowrap";
 const TEXT_CELL = "px-4 py-3 whitespace-nowrap";
 const TYPE_CELL = "px-4 py-3";
@@ -19,7 +20,7 @@ type ColumnDef = {
   key: SortKey;
   label: string;
   cell: (c: ColumnStats) => ReactNode;
-  cellClassName?: string;
+  cellClassName: string;
 };
 
 function num(value: number | null): string {
@@ -29,15 +30,20 @@ function num(value: number | null): string {
     : String(Number(value.toFixed(4)));
 }
 
-function text(value: string | number | null): string {
-  return value === null ? "—" : String(value);
+function text(value: string | null): string {
+  return value === null ? "—" : value;
 }
 
 // One entry per column drives both the header and the body cell, so a stat
 // field can't be wired into the header without a matching body cell (or
 // vice versa) — the two can no longer drift out of alignment.
 const COLUMNS = [
-  { key: "name", label: "Column", cell: (c: ColumnStats) => c.name },
+  {
+    key: "name",
+    label: "Column",
+    cell: (c: ColumnStats) => c.name,
+    cellClassName: NAME_CELL,
+  },
   {
     key: "type",
     label: "Type",
@@ -101,7 +107,6 @@ const COLUMNS = [
 type CoveredKey = (typeof COLUMNS)[number]["key"];
 type AllSortKeysCovered = SortKey extends CoveredKey ? true : never;
 const _allSortKeysCovered: AllSortKeysCovered = true;
-void _allSortKeysCovered;
 
 export function StatsTable({ stats }: { stats: ColumnStats[] }) {
   const [sort, setSort] = useState<SortState | null>(null);
@@ -143,11 +148,7 @@ export function StatsTable({ stats }: { stats: ColumnStats[] }) {
             >
               {COLUMNS.map((col) =>
                 col.key === "name" ? (
-                  <th
-                    key={col.key}
-                    scope="row"
-                    className="text-left font-semibold px-4 py-3 whitespace-nowrap"
-                  >
+                  <th key={col.key} scope="row" className={col.cellClassName}>
                     {col.cell(c)}
                   </th>
                 ) : (
