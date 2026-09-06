@@ -18,6 +18,11 @@ test("capture README screenshot", async ({ page }) => {
   await page.getByLabel("Paste CSV text").fill(SAMPLE_CSV);
   await page.getByRole("button", { name: "Mean" }).click();
   await page.waitForLoadState("networkidle");
+  // next dev's <nextjs-portal> renders its dev-tools badge as a fixed overlay;
+  // hide it so the capture doesn't include tooling that isn't part of the app.
+  await page.addStyleTag({
+    content: "nextjs-portal { display: none !important; }",
+  });
   // Full-page: the viewport alone crops the table before its last column.
   await page.screenshot({ path: "docs/screenshot.png", fullPage: true });
 });
