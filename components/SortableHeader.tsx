@@ -34,7 +34,7 @@ export function SortableHeader({
           className={`w-3 text-center ${
             active
               ? "text-slate-900 dark:text-slate-100"
-              : "text-slate-400 dark:text-slate-500"
+              : "text-slate-500 dark:text-slate-400"
           }`}
         >
           {sortGlyph(direction)}

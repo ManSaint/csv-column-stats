@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 
 // alpha, zeta, mid are numeric (means 2, 8, 5); bee and yak are text, each
 // with a clear most-frequent value (bee="zzz", yak="aaa") so a sort by
@@ -9,6 +9,11 @@ const CSV =
 /** Body row headers, top to bottom - i.e. the current column order. */
 function columnOrder(page: Page) {
   return page.locator("tbody th").allTextContents();
+}
+
+/** The always-rendered sort glyph inside a header cell's button. */
+function headerGlyph(header: Locator) {
+  return header.locator('span[aria-hidden="true"]');
 }
 
 test.beforeEach(async ({ page }) => {
@@ -29,12 +34,21 @@ test("clicking a header cycles ascending, descending, then back to CSV order", a
 
   const meanHeader = page.getByRole("columnheader", { name: "Mean" });
   const meanButton = meanHeader.getByRole("button", { name: "Mean" });
+  // A header not involved in this sort: its glyph must stay neutral
+  // throughout, proving the glyph is rendered per-column, not just for
+  // whichever header happens to be active.
+  const columnHeader = page.getByRole("columnheader", { name: "Column" });
+
+  // The glyph is always rendered, even before any column has been sorted.
+  await expect(headerGlyph(meanHeader)).toHaveText("↕");
 
   // Means are alpha=2, zeta=8, mid=5. bee and yak are text, so their mean is
   // null; nulls sink to the bottom regardless of direction, tie-broken by
   // name (bee < yak alphabetically).
   await meanButton.click();
   await expect(meanHeader).toHaveAttribute("aria-sort", "ascending");
+  await expect(headerGlyph(meanHeader)).toHaveText("▲");
+  await expect(headerGlyph(columnHeader)).toHaveText("↕");
   expect(await columnOrder(page)).toEqual([
     "alpha",
     "mid",
@@ -45,6 +59,8 @@ test("clicking a header cycles ascending, descending, then back to CSV order", a
 
   await meanButton.click();
   await expect(meanHeader).toHaveAttribute("aria-sort", "descending");
+  await expect(headerGlyph(meanHeader)).toHaveText("▼");
+  await expect(headerGlyph(columnHeader)).toHaveText("↕");
   expect(await columnOrder(page)).toEqual([
     "zeta",
     "mid",
@@ -55,6 +71,7 @@ test("clicking a header cycles ascending, descending, then back to CSV order", a
 
   await meanButton.click();
   await expect(meanHeader).toHaveAttribute("aria-sort", "none");
+  await expect(headerGlyph(meanHeader)).toHaveText("↕");
   expect(await columnOrder(page)).toEqual([
     "alpha",
     "zeta",

@@ -21,6 +21,8 @@ type ColumnDef = {
   label: string;
   cell: (c: ColumnStats) => ReactNode;
   cellClassName: string;
+  /** Renders as the row's <th scope="row"> instead of a <td>. Exactly one column should set this. */
+  rowHeader?: true;
 };
 
 function num(value: number | null): string {
@@ -43,6 +45,7 @@ const COLUMNS = [
     label: "Column",
     cell: (c: ColumnStats) => c.name,
     cellClassName: NAME_CELL,
+    rowHeader: true,
   },
   {
     key: "type",
@@ -146,8 +149,8 @@ export function StatsTable({ stats }: { stats: ColumnStats[] }) {
               key={c.name}
               className="border-b border-slate-200 dark:border-slate-800 last:border-0"
             >
-              {COLUMNS.map((col) =>
-                col.key === "name" ? (
+              {COLUMNS.map((col: ColumnDef) =>
+                col.rowHeader ? (
                   <th key={col.key} scope="row" className={col.cellClassName}>
                     {col.cell(c)}
                   </th>

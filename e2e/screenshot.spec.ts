@@ -23,6 +23,8 @@ test("capture README screenshot", async ({ page }) => {
   await page.addStyleTag({
     content: "nextjs-portal { display: none !important; }",
   });
-  // Full-page: the viewport alone crops the table before its last column.
+  // fullPage captures the whole page height; it cannot expand the table's
+  // own overflow-x-auto scroller, so the right-hand columns are clipped at
+  // any viewport - that's inherent to the layout, not a screenshot setting.
   await page.screenshot({ path: "docs/screenshot.png", fullPage: true });
 });
