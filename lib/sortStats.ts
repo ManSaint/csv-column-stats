@@ -10,13 +10,6 @@ export interface SortState {
   direction: SortDirection;
 }
 
-/** Fields compared as text; every other key is compared numerically. */
-const TEXT_KEYS: ReadonlySet<SortKey> = new Set<SortKey>([
-  "name",
-  "type",
-  "mostFrequent",
-]);
-
 /**
  * Three-state cycle: unsorted -> ascending -> descending -> unsorted.
  * Clicking a different column always restarts at ascending.
@@ -34,23 +27,25 @@ export function nextSortState(
   return null;
 }
 
-function compareValues(
-  a: ColumnStats[SortKey],
-  b: ColumnStats[SortKey],
-  key: SortKey,
-): number {
-  // Nulls sink to the bottom in both directions, so the caller must not
-  // negate this part of the comparison.
-  if (a === null && b === null) return 0;
-  if (a === null) return 1;
-  if (b === null) return -1;
-  if (TEXT_KEYS.has(key)) return String(a).localeCompare(String(b));
-  return Number(a) - Number(b);
+/**
+ * Compares two non-null field values, dispatching on their runtime type
+ * rather than on the key. A key list would drift from `ColumnStats` as
+ * fields are added; the value's own type cannot.
+ */
+function compareValues(a: string | number, b: string | number): number {
+  if (typeof a === "string" && typeof b === "string") {
+    return a.localeCompare(b);
+  }
+  if (typeof a === "number" && typeof b === "number") {
+    return a - b;
+  }
+  return 0;
 }
 
 /**
  * Returns a new array. `sort` of null preserves the original CSV column order.
- * Ties break by column name so the result is deterministic.
+ * Nulls sink to the bottom regardless of direction; ties (both values equal,
+ * including both null) break by column name so the result is deterministic.
  */
 export function sortStats(
   stats: ColumnStats[],
@@ -62,12 +57,10 @@ export function sortStats(
     const av = a[sort.key];
     const bv = b[sort.key];
 
-    // Null handling must survive the direction flip, so branch on it first.
     if (av === null || bv === null) {
-      const nulls = compareValues(av, bv, sort.key);
-      if (nulls !== 0) return nulls;
+      if (av !== bv) return av === null ? 1 : -1;
     } else {
-      const primary = compareValues(av, bv, sort.key);
+      const primary = compareValues(av, bv);
       if (primary !== 0) {
         return sort.direction === "ascending" ? primary : -primary;
       }

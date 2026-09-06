@@ -55,7 +55,9 @@ describe("sortStats", () => {
   ];
 
   it("returns the original order when unsorted", () => {
-    expect(sortStats(stats, null).map((c) => c.name)).toEqual(["b", "a", "c"]);
+    const result = sortStats(stats, null);
+    expect(result.map((c) => c.name)).toEqual(["b", "a", "c"]);
+    expect(result).not.toBe(stats);
   });
 
   it("does not mutate the input array", () => {
@@ -105,16 +107,43 @@ describe("sortStats", () => {
     ).toEqual(["m", "n"]);
   });
 
+  it("breaks ties by column name when both values are null", () => {
+    const bothNull = [
+      col({ name: "delta", mean: null }),
+      col({ name: "alpha", mean: null }),
+    ];
+    expect(
+      sortStats(bothNull, { key: "mean", direction: "ascending" }).map(
+        (c) => c.name,
+      ),
+    ).toEqual(["alpha", "delta"]);
+  });
+
   it("sorts text columns with localeCompare", () => {
+    // "apple" vs "Banana": code-unit "<" orders "Banana" first (uppercase
+    // sorts before lowercase in ASCII), but localeCompare orders "apple"
+    // first. This distinguishes localeCompare from a naive comparison.
     const text = [
-      col({ name: "z", mostFrequent: "banana" }),
-      col({ name: "y", mostFrequent: "Apple" }),
+      col({ name: "z", mostFrequent: "Banana" }),
+      col({ name: "y", mostFrequent: "apple" }),
     ];
     expect(
       sortStats(text, { key: "mostFrequent", direction: "ascending" }).map(
         (c) => c.mostFrequent,
       ),
-    ).toEqual(["Apple", "banana"]);
+    ).toEqual(["apple", "Banana"]);
+  });
+
+  it("sorts by type, treating it as text", () => {
+    const types = [
+      col({ name: "z", type: "text" }),
+      col({ name: "y", type: "numeric" }),
+    ];
+    expect(
+      sortStats(types, { key: "type", direction: "ascending" }).map(
+        (c) => c.type,
+      ),
+    ).toEqual(["numeric", "text"]);
   });
 
   it("breaks ties by column name ascending", () => {
